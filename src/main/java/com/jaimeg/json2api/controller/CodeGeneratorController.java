@@ -35,18 +35,12 @@ public class CodeGeneratorController {
 
         String code = modelClassGenerator.generateModelClassCode(models);
         try {
-            // Imprimir el contenido del código generado antes de enviarlo como archivo
-            System.out.println("Contenido del código generado: " + code);
-
-            // Convertir el código generado a un array de bytes
             byte[] fileContent = code.getBytes(StandardCharsets.UTF_8);
 
-            // Comprobar si el contenido está vacío
             if (fileContent.length == 0) {
                 throw new IOException("El contenido generado está vacío.");
             }
 
-            // Establecer los encabezados para la descarga del archivo
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Disposition", "attachment; filename=GeneratedModel.java");
 
@@ -54,7 +48,7 @@ public class CodeGeneratorController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseEntity<>(("Error al generar el archivo: " + e.getMessage()).getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(e.getMessage().getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

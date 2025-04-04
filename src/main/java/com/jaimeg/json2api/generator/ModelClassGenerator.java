@@ -1,6 +1,7 @@
 package com.jaimeg.json2api.generator;
 
 
+import com.jaimeg.json2api.enums.CommonJavaType;
 import com.jaimeg.json2api.models.ModelStruct;
 import com.jaimeg.json2api.models.Property;
 import com.squareup.javapoet.*;
@@ -20,35 +21,12 @@ public class ModelClassGenerator {
         List<Property> fields = modelStruct.getProperties();
 
         TypeSpec.Builder classBuilder = this.getClassBuilder(className);
-
         MethodSpec.Builder constructBuilder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
 
-        fields.forEach((field) -> {
-            String fieldName = field.getName();
-            String fieldTypeStr = field.getType();
-            ClassName fieldType = mapType(fieldTypeStr);
-
-            FieldSpec.Builder fieldSpecBuilder = FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE);
-            if (fieldName.equals(fields.get(0).getName())) {
-                fieldSpecBuilder
-                        .addAnnotation(Id.class)
-                        .addAnnotation(AnnotationSpec.builder(GeneratedValue.class).addMember("strategy", "$T.IDENTITY", GenerationType.class).build());
-            }
-
-
-            FieldSpec fieldSpec = fieldSpecBuilder.build();
-            classBuilder.addField(fieldSpec);
-
-            constructBuilder
-                    .addParameter(fieldType, fieldName)
-                    .addStatement("this.$N = $N", fieldName, fieldName);
-
-        });
+        this.getConstructBuilder(fields, classBuilder, constructBuilder);
 
         classBuilder.addMethod(constructBuilder.build());
-
         TypeSpec generatedClass = classBuilder.build();
-
         JavaFile javaFile = JavaFile.builder("com.generated.models", generatedClass).build();
 
         StringWriter out = new StringWriter();
@@ -61,23 +39,18 @@ public class ModelClassGenerator {
         return out.toString();
     }
 
-    //TODO REMOVE THIS FUNCTION
     private ClassName mapType(String type) {
-        switch (type) {
-            case "int":
-                return ClassName.get(Integer.class);
-            case "long":
-                return ClassName.get(Long.class);
-            case "double":
-                return ClassName.get(Double.class);
-            case "boolean":
-                return ClassName.get(Boolean.class);
-            case "String":
-                return ClassName.get(String.class);
-            default:
-                // Fallback a java.lang.Object
-                return ClassName.get("java.lang", type);
-        }
+        return CommonJavaType.fromName(type)
+                .map(CommonJavaType::getClassName)
+                .orElseGet(() -> {
+                    if (type.contains(".")) {
+                        String[] parts = type.split("\\.");
+                        String className = parts[parts.length - 1];
+                        String pkg = type.substring(0, type.lastIndexOf('.'));
+                        return ClassName.get(pkg, className);
+                    }
+                    return ClassName.get("java.lang", type);
+                });
     }
 
     private TypeSpec.Builder getClassBuilder(String className){
@@ -89,6 +62,32 @@ public class ModelClassGenerator {
                         .build());
     }
 
-    private
+    private void getConstructBuilder(List<Property> fields, TypeSpec.Builder classBuilder,  MethodSpec.Builder constructBuilder){
+        fields.forEach((field) -> {
+            String fieldName = field.getName();
+            String fieldTypeStr = field.getType();
+            Boolean isPrimaryKey = field.getIsPrimaryKey() != null && field.getIsPrimaryKey();
+            ClassName fieldType = mapType(fieldTypeStr);
+
+            FieldSpec.Builder fieldSpecBuilder = FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE);
+            if (isPrimaryKey){
+                fieldSpecBuilder
+                        .addAnnotation(Id.class)
+                        .addAnnotation(AnnotationSpec.builder(GeneratedValue.class)
+                                .addMember("strategy", "$T.IDENTITY", GenerationType.class)
+                                .build());
+            }
+
+            FieldSpec fieldSpec = fieldSpecBuilder.build();
+            classBuilder.addField(fieldSpec);
+
+            constructBuilder
+                    .addParameter(fieldType, fieldName)
+                    .addStatement("this.$N = $N", fieldName, fieldName);
+
+        });
+    }
+
+
 
 }

@@ -13,6 +13,7 @@ import lombok.Setter;
 public class Property {
     private String name;
     private String type;
+    private String pkg;
     @JsonAlias("primary_key")
     private Boolean isPrimaryKey;
 }
