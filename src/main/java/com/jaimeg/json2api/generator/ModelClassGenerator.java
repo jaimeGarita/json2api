@@ -27,6 +27,7 @@ public class ModelClassGenerator {
 
         classBuilder.addMethod(constructBuilder.build());
         TypeSpec generatedClass = classBuilder.build();
+        //TODO CHANGE COM.GENERATED.MODELS BUILDER TO DYNAMIC
         JavaFile javaFile = JavaFile.builder("com.generated.models", generatedClass).build();
 
         StringWriter out = new StringWriter();
@@ -56,6 +57,7 @@ public class ModelClassGenerator {
     private TypeSpec.Builder getClassBuilder(String className){
         return TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC)
                 .addAnnotation(Entity.class)
+
                 .addJavadoc("This is the model for" + className + "entity. \n")
                 .addAnnotation(AnnotationSpec.builder(Table.class)
                         .addMember("name", "$S", className)
@@ -66,7 +68,7 @@ public class ModelClassGenerator {
         fields.forEach((field) -> {
             String fieldName = field.getName();
             String fieldTypeStr = field.getType();
-            Boolean isPrimaryKey = field.getIsPrimaryKey() != null && field.getIsPrimaryKey();
+            boolean isPrimaryKey = field.getIsPrimaryKey() != null && field.getIsPrimaryKey();
             ClassName fieldType = mapType(fieldTypeStr);
 
             FieldSpec.Builder fieldSpecBuilder = FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE);

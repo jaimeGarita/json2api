@@ -2,7 +2,9 @@ package com.jaimeg.json2api.controller;
 
 
 import com.jaimeg.json2api.generator.ModelClassGenerator;
-import com.jaimeg.json2api.models   .ModelStruct;
+import com.jaimeg.json2api.models.Model;
+import com.jaimeg.json2api.models.ModelStruct;
+import com.jaimeg.json2api.service.CodeGeneratorService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,28 +26,19 @@ import java.nio.charset.StandardCharsets;
 public class CodeGeneratorController {
 
 
-    private final ModelClassGenerator modelClassGenerator;
+    private final CodeGeneratorService codeGeneratorService;
 
-    public CodeGeneratorController(ModelClassGenerator modelClassGenerator) {
-        this.modelClassGenerator = modelClassGenerator;
+    public CodeGeneratorController(CodeGeneratorService codeGeneratorService) {
+        this.codeGeneratorService = codeGeneratorService;
     }
 
     @PostMapping()
-    public ResponseEntity<byte[]> generateCode(@RequestBody ModelStruct models) {
+    public ResponseEntity<byte[]> generateCode(@RequestBody Model models) {
 
-        String code = modelClassGenerator.generateModelClassCode(models);
         try {
-            byte[] fileContent = code.getBytes(StandardCharsets.UTF_8);
 
-            if (fileContent.length == 0) {
-                throw new IOException("El contenido generado está vacío.");
-            }
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-Disposition", "attachment; filename=GeneratedModel.java");
-
-            return new ResponseEntity<>(fileContent, headers, HttpStatus.OK);
-
+            this.codeGeneratorService.generateCodeService(models.getModels());
+            return null;
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>(e.getMessage().getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
