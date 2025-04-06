@@ -86,8 +86,14 @@ public class ModelClassGenerator {
             if (fieldRelationShip != null && !fieldRelationShip.isEmpty()) {
                 this.getRelationShips(field, fieldSpecBuilder, className);
             }
+            FieldSpec fieldSpec = fieldSpecBuilder.build();
 
-            this.getConstructor(fieldSpecBuilder, classBuilder, constructBuilder, fieldName, fieldType);
+            // -- GETTER & SETTER --
+            this.addGetter(fieldSpec, classBuilder);
+            this.addSetter(fieldSpec, classBuilder);
+
+            // -- CONSTRUCT --
+            this.addConstruct(fieldSpec, classBuilder, constructBuilder, fieldName, fieldType);
 
 
         });
@@ -101,14 +107,29 @@ public class ModelClassGenerator {
                         .build());
     }
 
-    private void getConstructor(FieldSpec.Builder fieldSpecBuilder, TypeSpec.Builder classBuilder, MethodSpec.Builder constructBuilder, String fieldName, TypeName fieldType) {
-        FieldSpec fieldSpec = fieldSpecBuilder.build();
+    private void addConstruct(FieldSpec fieldSpec, TypeSpec.Builder classBuilder, MethodSpec.Builder constructBuilder, String fieldName, TypeName fieldType) {
         classBuilder.addField(fieldSpec);
 
         constructBuilder
                 .addParameter(fieldType, fieldName)
                 .addStatement("this.$N = $N", fieldName, fieldName);
     }
+
+    private void addSetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder) {
+        String setterName = "set" + capitalizeFirstLetter(fieldSpec.name);
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(setterName).addModifiers(Modifier.PUBLIC);
+        methodBuilder.addParameter(fieldSpec.type, fieldSpec.name);
+        methodBuilder.addStatement("this." + fieldSpec.name + "=" + fieldSpec.name);
+        classBuilder.addMethod(methodBuilder.build());
+    }
+
+    public void addGetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder) {
+        String getterName  = "get"+capitalizeFirstLetter(fieldSpec.name);
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(getterName).returns(fieldSpec.type).addModifiers(Modifier.PUBLIC);
+        methodBuilder.addStatement("return this."+fieldSpec.name);
+        classBuilder.addMethod(methodBuilder.build());
+    }
+
 
     private void getRelationShips(Property property, FieldSpec.Builder fieldSpecBuilder, String className) {
         switch (property.getRelationType()) {
@@ -131,5 +152,9 @@ public class ModelClassGenerator {
                 break;
 
         }
+    }
+
+    private static String capitalizeFirstLetter(final String str) {
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 }

@@ -21,6 +21,7 @@ public class CodeGeneratorService {
         List<byte[]> contentFiles = new ArrayList<>();
         modelStructs.forEach((model) -> {
             String code = modelClassGenerator.generateModelClassCode(model);
+            System.out.println(code);
             byte[] fileContent = code.getBytes(StandardCharsets.UTF_8);
             contentFiles.add(fileContent);
         });
