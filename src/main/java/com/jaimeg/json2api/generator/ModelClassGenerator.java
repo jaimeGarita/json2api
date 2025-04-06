@@ -23,7 +23,7 @@ public class ModelClassGenerator {
         TypeSpec.Builder classBuilder = this.getClassBuilder(className);
         MethodSpec.Builder constructBuilder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
 
-        this.getConstructBuilder(fields, classBuilder, constructBuilder);
+        this.constructClass(fields, classBuilder, constructBuilder, className);
 
         classBuilder.addMethod(constructBuilder.build());
         TypeSpec generatedClass = classBuilder.build();
@@ -40,21 +40,28 @@ public class ModelClassGenerator {
         return out.toString();
     }
 
-    private ClassName mapType(String type) {
+    private TypeName mapType(String type, String pkg) {
+        //TODO CUANDO TENGA EL PACKAGE, METER AQUI EL PACKAGE PARA LAS RELACIONES
+        if (type.startsWith("List<") && type.endsWith(">")) {
+            String genericTypeStr = type.substring(type.indexOf("<") + 1, type.indexOf(">"));
+            TypeName genericType = mapType(genericTypeStr, pkg);
+            return ParameterizedTypeName.get(ClassName.get("java.util", "List"), genericType);
+        }
+
         return CommonJavaType.fromName(type)
                 .map(CommonJavaType::getClassName)
                 .orElseGet(() -> {
-                    if (type.contains(".")) {
-                        String[] parts = type.split("\\.");
+                    if (pkg != null && pkg.contains(".")) {
+                        String[] parts = pkg.split("\\.");
                         String className = parts[parts.length - 1];
-                        String pkg = type.substring(0, type.lastIndexOf('.'));
-                        return ClassName.get(pkg, className);
+                        String convertPkg = pkg.substring(0, pkg.lastIndexOf('.'));
+                        return ClassName.get(convertPkg, className);
                     }
                     return ClassName.get("java.lang", type);
                 });
     }
 
-    private TypeSpec.Builder getClassBuilder(String className){
+    private TypeSpec.Builder getClassBuilder(String className) {
         return TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC)
                 .addAnnotation(Entity.class)
 
@@ -64,32 +71,65 @@ public class ModelClassGenerator {
                         .build());
     }
 
-    private void getConstructBuilder(List<Property> fields, TypeSpec.Builder classBuilder,  MethodSpec.Builder constructBuilder){
+    private void constructClass(List<Property> fields, TypeSpec.Builder classBuilder, MethodSpec.Builder constructBuilder, String className) {
         fields.forEach((field) -> {
             String fieldName = field.getName();
             String fieldTypeStr = field.getType();
+            String fieldRelationShip = field.getRelationType();
             boolean isPrimaryKey = field.getIsPrimaryKey() != null && field.getIsPrimaryKey();
-            ClassName fieldType = mapType(fieldTypeStr);
+            TypeName fieldType = mapType(fieldTypeStr, field.getPkg());
 
             FieldSpec.Builder fieldSpecBuilder = FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE);
-            if (isPrimaryKey){
-                fieldSpecBuilder
-                        .addAnnotation(Id.class)
-                        .addAnnotation(AnnotationSpec.builder(GeneratedValue.class)
-                                .addMember("strategy", "$T.IDENTITY", GenerationType.class)
-                                .build());
+            if (isPrimaryKey) {
+                this.getPrimaryKey(fieldSpecBuilder);
+            }
+            if (fieldRelationShip != null && !fieldRelationShip.isEmpty()) {
+                this.getRelationShips(field, fieldSpecBuilder, className);
             }
 
-            FieldSpec fieldSpec = fieldSpecBuilder.build();
-            classBuilder.addField(fieldSpec);
+            this.getConstructor(fieldSpecBuilder, classBuilder, constructBuilder, fieldName, fieldType);
 
-            constructBuilder
-                    .addParameter(fieldType, fieldName)
-                    .addStatement("this.$N = $N", fieldName, fieldName);
 
         });
     }
 
+    private void getPrimaryKey(FieldSpec.Builder fieldSpecBuilder) {
+        fieldSpecBuilder
+                .addAnnotation(Id.class)
+                .addAnnotation(AnnotationSpec.builder(GeneratedValue.class)
+                        .addMember("strategy", "$T.IDENTITY", GenerationType.class)
+                        .build());
+    }
 
+    private void getConstructor(FieldSpec.Builder fieldSpecBuilder, TypeSpec.Builder classBuilder, MethodSpec.Builder constructBuilder, String fieldName, TypeName fieldType) {
+        FieldSpec fieldSpec = fieldSpecBuilder.build();
+        classBuilder.addField(fieldSpec);
 
+        constructBuilder
+                .addParameter(fieldType, fieldName)
+                .addStatement("this.$N = $N", fieldName, fieldName);
+    }
+
+    private void getRelationShips(Property property, FieldSpec.Builder fieldSpecBuilder, String className) {
+        switch (property.getRelationType()) {
+            case "OneToMany":
+                fieldSpecBuilder.addAnnotation(AnnotationSpec.builder(OneToMany.class)
+                        .addMember("mappedBy", "$S", className != null ? className : "unknown")
+                        .build());
+                break;
+            case "ManyToMany":
+                fieldSpecBuilder.addAnnotation(ManyToMany.class);
+                break;
+            case "ManyToOne":
+                fieldSpecBuilder.addAnnotation(ManyToOne.class);
+                fieldSpecBuilder.addAnnotation(AnnotationSpec.builder(JoinColumn.class)
+                        .addMember("name", "$S", property.getName() + "_id")
+                        .build());
+                break;
+            case "OneToOne":
+                fieldSpecBuilder.addAnnotation(OneToOne.class);
+                break;
+
+        }
+    }
 }

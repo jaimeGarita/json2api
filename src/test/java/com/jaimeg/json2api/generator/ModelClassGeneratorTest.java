@@ -38,9 +38,9 @@ public class ModelClassGeneratorTest {
         ModelStruct model = new ModelStruct();
         model.setName("User");
         List<Property> properties = new ArrayList<>();
-        properties.add(new Property("id", "Integer", null, true));
-        properties.add(new Property("name", "String", null, false));
-        properties.add(new Property("age", "Integer", null, false));
+        properties.add(new Property("id", "Integer", null, true, null));
+        properties.add(new Property("name", "String", null, false, null));
+        properties.add(new Property("age", "Integer", null, false, null));
         model.setProperties(properties);
         return model;
     }
@@ -92,12 +92,11 @@ public class ModelClassGeneratorTest {
     private ModelStruct createModelWithPkg(){
         ModelStruct model = this.createSampleModel();
         List<Property> properties = model.getProperties();
-        properties.add(new Property("createdAt", "LocalDateTime", "java.time.LocalDateTime", false));
+        properties.add(new Property("createdAt", "LocalDateTime", "java.time.LocalDateTime", false, null));
         model.setProperties(properties);
 
         return model;
     }
-
 
     @Test
     void test_generateModelWithPkg() {

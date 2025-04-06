@@ -11,9 +11,16 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Property {
+
     private String name;
+
     private String type;
+
     private String pkg;
+
     @JsonAlias("primary_key")
     private Boolean isPrimaryKey;
+
+    private String relationType; //OneToMany, OneToOne, ManyToMany
+
 }
