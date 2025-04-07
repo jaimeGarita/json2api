@@ -1,7 +1,7 @@
 package com.jaimeg.json2api.controller;
 
 
-import com.jaimeg.json2api.models.Model;
+import com.jaimeg.json2api.models.JsonTransformer;
 import com.jaimeg.json2api.service.CodeGeneratorService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CrossOrigin
 public class CodeGeneratorController {
 
-
     private final CodeGeneratorService codeGeneratorService;
 
     public CodeGeneratorController(CodeGeneratorService codeGeneratorService) {
@@ -25,18 +24,15 @@ public class CodeGeneratorController {
     }
 
     @PostMapping()
-    public ResponseEntity<byte[]> generateCode(@RequestBody Model models) {
+    public ResponseEntity<byte[]> generateCode(@RequestBody JsonTransformer models) {
 
         try {
-
-            this.codeGeneratorService.generateCodeService(models.getModels());
+            this.codeGeneratorService.generateCodeService(models);
             return null;
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>(e.getMessage().getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-
-   }
+    }
 
 }

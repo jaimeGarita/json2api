@@ -2,7 +2,7 @@ package com.jaimeg.json2api.generator;
 
 
 import com.jaimeg.json2api.enums.CommonJavaType;
-import com.jaimeg.json2api.models.ModelStruct;
+import com.jaimeg.json2api.models.EntityStructure;
 import com.jaimeg.json2api.models.Property;
 import com.squareup.javapoet.*;
 import jakarta.persistence.*;
@@ -16,9 +16,10 @@ import java.util.List;
 @Component
 public class ModelClassGenerator {
 
-    public String generateModelClassCode(ModelStruct modelStruct) {
-        String className = modelStruct.getName();
-        List<Property> fields = modelStruct.getProperties();
+    public String generateModelClassCode(EntityStructure entityStructure, String group, String artifact) {
+        String packageName = group + "." + artifact;
+        String className = entityStructure.getName();
+        List<Property> fields = entityStructure.getProperties();
 
         TypeSpec.Builder classBuilder = this.getClassBuilder(className);
         MethodSpec.Builder constructBuilder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
@@ -27,8 +28,7 @@ public class ModelClassGenerator {
 
         classBuilder.addMethod(constructBuilder.build());
         TypeSpec generatedClass = classBuilder.build();
-        //TODO CHANGE COM.GENERATED.MODELS BUILDER TO DYNAMIC
-        JavaFile javaFile = JavaFile.builder("com.generated.models", generatedClass).build();
+        JavaFile javaFile = JavaFile.builder(packageName, generatedClass).build();
 
         StringWriter out = new StringWriter();
         try {
@@ -53,12 +53,20 @@ public class ModelClassGenerator {
                 .orElseGet(() -> {
                     if (pkg != null && pkg.contains(".")) {
                         String[] parts = pkg.split("\\.");
-                        String className = parts[parts.length - 1];
-                        String convertPkg = pkg.substring(0, pkg.lastIndexOf('.'));
+                        String className = this.getClassName(parts);
+                        String convertPkg = this.convertPkg(pkg);
                         return ClassName.get(convertPkg, className);
                     }
                     return ClassName.get("java.lang", type);
                 });
+    }
+
+    private String getClassName(String[] parts) {
+        return parts[parts.length - 1];
+    }
+
+    private String convertPkg(String pkg) {
+        return pkg.substring(0, pkg.lastIndexOf('.'));
     }
 
     private TypeSpec.Builder getClassBuilder(String className) {
@@ -124,9 +132,9 @@ public class ModelClassGenerator {
     }
 
     public void addGetter(FieldSpec fieldSpec, TypeSpec.Builder classBuilder) {
-        String getterName  = "get"+capitalizeFirstLetter(fieldSpec.name);
+        String getterName = "get" + capitalizeFirstLetter(fieldSpec.name);
         MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(getterName).returns(fieldSpec.type).addModifiers(Modifier.PUBLIC);
-        methodBuilder.addStatement("return this."+fieldSpec.name);
+        methodBuilder.addStatement("return this." + fieldSpec.name);
         classBuilder.addMethod(methodBuilder.build());
     }
 
@@ -140,7 +148,17 @@ public class ModelClassGenerator {
                 break;
             case "ManyToMany":
                 fieldSpecBuilder.addAnnotation(ManyToMany.class);
+                fieldSpecBuilder.addAnnotation(AnnotationSpec.builder(JoinTable.class)
+                        .addMember("name", "$S", property.getName().toLowerCase())
+                        .addMember("joinColumns", "$L", AnnotationSpec.builder(JoinColumn.class)
+                                .addMember("name", "$S", className.toLowerCase() + "_id")
+                                .build())
+                        .addMember("inverseJoinColumns", "$L", AnnotationSpec.builder(JoinColumn.class)
+                                .addMember("name", "$S", property.getIdFk().isEmpty() ? property.getName().toLowerCase() + "_id" : property.getIdFk())
+                                .build())
+                        .build());
                 break;
+
             case "ManyToOne":
                 fieldSpecBuilder.addAnnotation(ManyToOne.class);
                 fieldSpecBuilder.addAnnotation(AnnotationSpec.builder(JoinColumn.class)

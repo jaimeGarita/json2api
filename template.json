@@ -1,0 +1,45 @@
+{
+  "group": "com.example",
+  "artifact": "demo",
+  "description": "Demo project for Spring Boot",
+  "java_version": "21",
+  "packaging": "Jar",
+  "models": [
+    {
+      "name": "User",
+      "properties": [
+        {
+          "name": "id",
+          "type": "Long",
+          "primaryKey": true
+        },
+        {
+          "name": "name",
+          "type": "String"
+        },
+        {
+          "name": "email",
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "Product",
+      "properties": [
+        {
+          "name": "id",
+          "type": "Long",
+          "primaryKey": true
+        },
+        {
+          "name": "name",
+          "type": "String"
+        },
+        {
+          "name": "price",
+          "type": "Double"
+        }
+      ]
+    }
+  ]
+}

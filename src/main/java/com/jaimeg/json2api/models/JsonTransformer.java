@@ -12,7 +12,20 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Model {
+public class JsonTransformer {
+
+    private String group;
+
+    private String artifact;
+
+    private String description;
+
+    @JsonAlias("java_version")
+    private String javaVersion;
+
+    @JsonAlias("packaging")
+    private String packaging;
+
     @JsonAlias("models")
-    private List<ModelStruct> models;
+    private List<EntityStructure> models;
 }

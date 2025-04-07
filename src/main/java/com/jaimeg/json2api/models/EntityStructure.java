@@ -11,7 +11,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ModelStruct {
+public class EntityStructure {
    private String name;
    private List<Property> properties;
 }
