@@ -14,6 +14,11 @@ import java.util.stream.IntStream;
 @SpringBootTest
 public class JsonTransformerClassGeneratorTest {
 
+    private final static String GROUP = "com.example";
+    private final static String ARTIFACT = "prueba";
+    private final static String PACKAGE_NAME = GROUP + "." + ARTIFACT + ".model";
+
+
     private ModelClassGenerator modelClassGenerator;
 
     @BeforeEach
@@ -24,7 +29,7 @@ public class JsonTransformerClassGeneratorTest {
     @Test
     void test_generateModelClassCode() {
         EntityStructure model = createSampleModel();
-        String code = modelClassGenerator.generateModelClassCode(model, "com.example", "prueba");
+        String code = modelClassGenerator.generateModelClassCode(model, GROUP, ARTIFACT);
 
         assertClassStructure(code);
         assertEntityAnnotations(code);
@@ -37,27 +42,27 @@ public class JsonTransformerClassGeneratorTest {
     @Test
     void test_generateModelWithPkg() {
         EntityStructure model = createModelWithPkg();
-        String code = modelClassGenerator.generateModelClassCode(model, "com.example", "prueba");
+        String code = modelClassGenerator.generateModelClassCode(model, GROUP, ARTIFACT);
 
         assertClassStructure(code);
         assertEntityAnnotations(code);
         assertFieldAnnotations(code, "id", "Integer", true);
         assertFieldAnnotations(code, "name", "String", false);
         assertFieldAnnotations(code, "age", "Integer", false);
-        assertFieldAnnotations(code, "createdAt", "LocalDateTime", false);
+        assertFieldAnnotations(code, "createdAt", "java.time.LocalDateTime", false);
         assertConstructor(code, model.getProperties());
     }
 
     @Test
     void test_generateModelWithManyToOne() {
         EntityStructure entityStructure = createModelsWithRelationShips("ManyToOne", null);
-        String code = modelClassGenerator.generateModelClassCode(entityStructure, "com.example", "prueba");
+        String code = modelClassGenerator.generateModelClassCode(entityStructure, GROUP, ARTIFACT);
         assertClassStructure(code);
         assertEntityAnnotations(code);
         assertFieldAnnotations(code, "id", "Integer", true);
         assertFieldAnnotations(code, "name", "String", false);
         assertFieldAnnotations(code, "age", "Integer", false);
-        assertFieldAnnotations(code, "post", "Post", false);
+        assertFieldAnnotations(code, "post", PACKAGE_NAME + ".Post", false);
         assertManyToOne(code);
         assertConstructor(code, entityStructure.getProperties());
 
@@ -65,14 +70,15 @@ public class JsonTransformerClassGeneratorTest {
 
     @Test
     void test_generateModelWithOneToMany() {
+
         EntityStructure entityStructure = createModelsWithRelationShips("OneToMany", null);
-        String code = modelClassGenerator.generateModelClassCode(entityStructure, "com.example", "prueba");
+        String code = modelClassGenerator.generateModelClassCode(entityStructure, GROUP, ARTIFACT);
         assertClassStructure(code);
         assertEntityAnnotations(code);
         assertFieldAnnotations(code, "id", "Integer", true);
         assertFieldAnnotations(code, "name", "String", false);
         assertFieldAnnotations(code, "age", "Integer", false);
-        assertFieldAnnotations(code, "posts", "List<Post>", false);
+        assertFieldAnnotations(code, "posts", "List<" + PACKAGE_NAME + ".Post>", false);
         assertOneToMany(code);
         assertConstructor(code, entityStructure.getProperties());
 
@@ -81,13 +87,13 @@ public class JsonTransformerClassGeneratorTest {
     @Test
     void test_generateModelWithManyToMany() {
         EntityStructure entityStructure = createModelsWithRelationShips("ManyToMany", "post_id");
-        String code = modelClassGenerator.generateModelClassCode(entityStructure, "com.example", "prueba");
+        String code = modelClassGenerator.generateModelClassCode(entityStructure, GROUP, ARTIFACT);
         assertClassStructure(code);
         assertEntityAnnotations(code);
         assertFieldAnnotations(code, "id", "Integer", true);
         assertFieldAnnotations(code, "name", "String", false);
         assertFieldAnnotations(code, "age", "Integer", false);
-        assertFieldAnnotations(code, "posts", "List<Post>", false);
+        assertFieldAnnotations(code, "posts", "List<" + PACKAGE_NAME + ".Post>", false);
         assertManyToMany(code);
         assertConstructor(code, entityStructure.getProperties());
 
@@ -113,9 +119,9 @@ public class JsonTransformerClassGeneratorTest {
         properties.add(Property.builder().name("name").type("String").build());
         properties.add(Property.builder().name("age").type("Integer").build());
         if ("ManyToOne".equals(relationShip))
-            properties.add(Property.builder().name("post").type("Post").pkg("com.test.model.Post").relationType(relationShip).build());
+            properties.add(Property.builder().name("post").type("Post").relationType(relationShip).build());
         else
-            properties.add(Property.builder().name("posts").type("List<Post>").pkg("com.test.model.Post").relationType(relationShip).idFk(idFk).build());
+            properties.add(Property.builder().name("posts").type("List<Post>").relationType(relationShip).idFk(idFk).build());
         model.setProperties(properties);
 
         return model;
@@ -123,41 +129,38 @@ public class JsonTransformerClassGeneratorTest {
     }
 
     private void assertManyToOne(String code) {
-        String manyToOneAnnotation =
-                """
-                        @ManyToOne
-                        @JoinColumn(
-                            name = "post_id"
-                        )
-                        private Post post;
-                        """;
+        String manyToOneAnnotation = String.format("""
+                @ManyToOne
+                @JoinColumn(
+                    name = "post_id"
+                )
+                private %s post;
+                """, PACKAGE_NAME + ".Post");
         manyToOneAnnotation = manyToOneAnnotation.replaceAll("\\s+", " ").trim();
         Assertions.assertTrue(code.replaceAll("\\s+", " ").contains(manyToOneAnnotation));
     }
 
     private void assertOneToMany(String code) {
-        String oneToManyAnnotation =
-                """
-                        @OneToMany(
-                            mappedBy = "User"
-                        )
-                        private List<Post> posts;
-                        """;
+        String oneToManyAnnotation = String.format("""
+                @OneToMany(
+                    mappedBy = "User"
+                )
+                private List<%s> posts;
+                """, PACKAGE_NAME + ".Post");
         oneToManyAnnotation = oneToManyAnnotation.replaceAll("\\s+", " ").trim();
         Assertions.assertTrue(code.replaceAll("\\s+", " ").contains(oneToManyAnnotation));
     }
 
     private void assertManyToMany(String code) {
-        String oneToManyAnnotation =
-                """
-                                  @ManyToMany
-                                  @JoinTable(
-                                      name = "posts",
-                                      joinColumns = @JoinColumn(name = "user_id"),
-                                      inverseJoinColumns = @JoinColumn(name = "post_id")
-                                  )
-                                  private List<Post> posts;
-                        """;
+        String oneToManyAnnotation = String.format("""
+                @ManyToMany
+                @JoinTable(
+                    name = "posts",
+                    joinColumns = @JoinColumn(name = "user_id"),
+                    inverseJoinColumns = @JoinColumn(name = "post_id")
+                )
+                private List<%s> posts;
+                """, PACKAGE_NAME + ".Post");
         oneToManyAnnotation = oneToManyAnnotation.replaceAll("\\s+", " ").trim();
         Assertions.assertTrue(code.replaceAll("\\s+", " ").contains(oneToManyAnnotation));
     }
@@ -174,7 +177,8 @@ public class JsonTransformerClassGeneratorTest {
     }
 
     private void assertFieldAnnotations(String code, String fieldName, String fieldType, boolean isId) {
-        String fieldTypeWithModifiers = "private " + fieldType + " " + fieldName + ";";
+        String fieldTypeWithModifiers = "";
+        fieldTypeWithModifiers = "private " + fieldType + " " + fieldName + ";";
         Assertions.assertTrue(code.contains(fieldTypeWithModifiers));
 
         if (isId) {
@@ -189,28 +193,53 @@ public class JsonTransformerClassGeneratorTest {
         StringBuilder expectedConstructor = new StringBuilder();
         expectedConstructor.append(" public User(");
         int size = properties.size();
+
         IntStream.range(0, size).forEach(i -> {
             Property prop = properties.get(i);
-            expectedConstructor.append(prop.getType()).append(" ").append(prop.getName());
+            String resolvedType = resolveFullType(prop);
+            expectedConstructor.append(resolvedType).append(" ").append(prop.getName());
+
             if (i < size - 1) {
                 expectedConstructor.append(", ");
             }
         });
+
         expectedConstructor.append(") {\n");
         properties.forEach((prop) -> {
             expectedConstructor.append("    this.").append(prop.getName()).append(" = ").append(prop.getName()).append(";\n");
         });
         expectedConstructor.append("  }");
 
+        System.out.println(expectedConstructor.toString());
+
         Assertions.assertTrue(code.contains(expectedConstructor.toString()));
     }
+
 
     private EntityStructure createModelWithPkg() {
         EntityStructure model = this.createSampleModel();
         List<Property> properties = model.getProperties();
-        properties.add(Property.builder().name("createdAt").type("LocalDateTime").pkg("java.time.LocalDateTime").build());
+        properties.add(Property.builder().name("createdAt").type("LocalDateTime").pkg("java.time").build());
         model.setProperties(properties);
 
         return model;
     }
+
+    private String resolveFullType(Property prop) {
+        String type = prop.getType();
+        if (prop.getPkg() == null) return type;
+
+        if (type.contains("<") && type.contains(">")) {
+            // Ej: List<Post>
+            int start = type.indexOf("<") + 1;
+            int end = type.indexOf(">");
+            String genericType = type.substring(start, end);
+            String qualifiedGeneric = prop.getPkg() + "." + genericType;
+            return type.substring(0, start) + qualifiedGeneric + type.substring(end);
+        } else {
+            return prop.getPkg() + "." + type;
+        }
+    }
+
+
 }

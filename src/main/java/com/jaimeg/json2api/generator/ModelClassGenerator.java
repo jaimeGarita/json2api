@@ -17,14 +17,14 @@ import java.util.List;
 public class ModelClassGenerator {
 
     public String generateModelClassCode(EntityStructure entityStructure, String group, String artifact) {
-        String packageName = group + "." + artifact;
+        String packageName = group + "." + artifact + ".model";
         String className = entityStructure.getName();
         List<Property> fields = entityStructure.getProperties();
 
         TypeSpec.Builder classBuilder = this.getClassBuilder(className);
         MethodSpec.Builder constructBuilder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
 
-        this.constructClass(fields, classBuilder, constructBuilder, className);
+        this.constructClass(fields, classBuilder, constructBuilder, className, packageName);
 
         classBuilder.addMethod(constructBuilder.build());
         TypeSpec generatedClass = classBuilder.build();
@@ -41,9 +41,10 @@ public class ModelClassGenerator {
     }
 
     private TypeName mapType(String type, String pkg) {
-        //TODO CUANDO TENGA EL PACKAGE, METER AQUI EL PACKAGE PARA LAS RELACIONES
+
         if (type.startsWith("List<") && type.endsWith(">")) {
             String genericTypeStr = type.substring(type.indexOf("<") + 1, type.indexOf(">"));
+
             TypeName genericType = mapType(genericTypeStr, pkg);
             return ParameterizedTypeName.get(ClassName.get("java.util", "List"), genericType);
         }
@@ -53,9 +54,8 @@ public class ModelClassGenerator {
                 .orElseGet(() -> {
                     if (pkg != null && pkg.contains(".")) {
                         String[] parts = pkg.split("\\.");
-                        String className = this.getClassName(parts);
                         String convertPkg = this.convertPkg(pkg);
-                        return ClassName.get(convertPkg, className);
+                        return ClassName.get(convertPkg, pkg + "." + type);
                     }
                     return ClassName.get("java.lang", type);
                 });
@@ -79,12 +79,14 @@ public class ModelClassGenerator {
                         .build());
     }
 
-    private void constructClass(List<Property> fields, TypeSpec.Builder classBuilder, MethodSpec.Builder constructBuilder, String className) {
+    private void constructClass(List<Property> fields, TypeSpec.Builder classBuilder, MethodSpec.Builder constructBuilder, String className, String packageName) {
         fields.forEach((field) -> {
             String fieldName = field.getName();
             String fieldTypeStr = field.getType();
             String fieldRelationShip = field.getRelationType();
             boolean isPrimaryKey = field.getIsPrimaryKey() != null && field.getIsPrimaryKey();
+            if(fieldRelationShip != null && field.getPkg() == null)
+                field.setPkg(packageName);
             TypeName fieldType = mapType(fieldTypeStr, field.getPkg());
 
             FieldSpec.Builder fieldSpecBuilder = FieldSpec.builder(fieldType, fieldName, Modifier.PRIVATE);
@@ -167,6 +169,7 @@ public class ModelClassGenerator {
                 break;
             case "OneToOne":
                 fieldSpecBuilder.addAnnotation(OneToOne.class);
+
                 break;
 
         }
@@ -175,4 +178,6 @@ public class ModelClassGenerator {
     private static String capitalizeFirstLetter(final String str) {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
+
+
 }

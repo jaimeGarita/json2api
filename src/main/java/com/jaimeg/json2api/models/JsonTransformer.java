@@ -26,6 +26,8 @@ public class JsonTransformer {
     @JsonAlias("packaging")
     private String packaging;
 
+    private String dependencies;
+
     @JsonAlias("models")
     private List<EntityStructure> models;
 }
