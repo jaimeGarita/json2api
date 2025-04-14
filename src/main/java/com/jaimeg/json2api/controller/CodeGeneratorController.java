@@ -38,10 +38,10 @@ public class CodeGeneratorController {
                     models.getJavaVersion(),
                     models.getPackaging()
             );
-            this.codeGeneratorService.generateCodeService(models, zipBytes);
+            byte[] finalZip = this.codeGeneratorService.generateCodeService(models, zipBytes);
             return ResponseEntity.ok()
                     .header("Content-Disposition", "attachment; filename=project.zip")
-                    .body(zipBytes);
+                    .body(finalZip);
 
         } catch (Exception e) {
             e.printStackTrace();

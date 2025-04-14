@@ -55,7 +55,10 @@ public class ModelClassGenerator {
                     if (pkg != null && pkg.contains(".")) {
                         String[] parts = pkg.split("\\.");
                         String convertPkg = this.convertPkg(pkg);
-                        return ClassName.get(convertPkg, pkg + "." + type);
+                        if (type.contains(pkg)){
+                            return ClassName.get(convertPkg, type);
+                        }
+                        return ClassName.get(convertPkg + ".model", type);
                     }
                     return ClassName.get("java.lang", type);
                 });

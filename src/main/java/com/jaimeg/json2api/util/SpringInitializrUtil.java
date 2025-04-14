@@ -20,6 +20,11 @@ public class SpringInitializrUtil {
     public byte[] generateProjectFromInitializr(String group, String artifact, String packageName, String dependencies, String description, String javaVersion, String packaging) {
         byte[] zipBytes = null;
         try {
+            if (dependencies != null){
+                dependencies += ",web,lombok,data-jpa";
+            }else {
+                dependencies = "web,lombok,data-jpa";
+            }
             String url = buildSpringInitializrUrl(group, artifact, description, packaging, javaVersion, packageName, dependencies);
             zipBytes = getZipFromInitializr(url);
         } catch (Exception e) {

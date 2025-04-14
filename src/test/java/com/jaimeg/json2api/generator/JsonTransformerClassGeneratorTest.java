@@ -49,7 +49,7 @@ public class JsonTransformerClassGeneratorTest {
         assertFieldAnnotations(code, "id", "Integer", true);
         assertFieldAnnotations(code, "name", "String", false);
         assertFieldAnnotations(code, "age", "Integer", false);
-        assertFieldAnnotations(code, "createdAt", "java.time.LocalDateTime", false);
+        assertFieldAnnotations(code, "createdAt", "LocalDateTime", false);
         assertConstructor(code, model.getProperties());
     }
 
@@ -62,7 +62,7 @@ public class JsonTransformerClassGeneratorTest {
         assertFieldAnnotations(code, "id", "Integer", true);
         assertFieldAnnotations(code, "name", "String", false);
         assertFieldAnnotations(code, "age", "Integer", false);
-        assertFieldAnnotations(code, "post", PACKAGE_NAME + ".Post", false);
+        assertFieldAnnotations(code, "post", "Post", false);
         assertManyToOne(code);
         assertConstructor(code, entityStructure.getProperties());
 
@@ -78,7 +78,7 @@ public class JsonTransformerClassGeneratorTest {
         assertFieldAnnotations(code, "id", "Integer", true);
         assertFieldAnnotations(code, "name", "String", false);
         assertFieldAnnotations(code, "age", "Integer", false);
-        assertFieldAnnotations(code, "posts", "List<" + PACKAGE_NAME + ".Post>", false);
+        assertFieldAnnotations(code, "posts", "List<Post>", false);
         assertOneToMany(code);
         assertConstructor(code, entityStructure.getProperties());
 
@@ -93,7 +93,7 @@ public class JsonTransformerClassGeneratorTest {
         assertFieldAnnotations(code, "id", "Integer", true);
         assertFieldAnnotations(code, "name", "String", false);
         assertFieldAnnotations(code, "age", "Integer", false);
-        assertFieldAnnotations(code, "posts", "List<" + PACKAGE_NAME + ".Post>", false);
+        assertFieldAnnotations(code, "posts", "List<Post>", false);
         assertManyToMany(code);
         assertConstructor(code, entityStructure.getProperties());
 
@@ -135,7 +135,7 @@ public class JsonTransformerClassGeneratorTest {
                     name = "post_id"
                 )
                 private %s post;
-                """, PACKAGE_NAME + ".Post");
+                """, "Post");
         manyToOneAnnotation = manyToOneAnnotation.replaceAll("\\s+", " ").trim();
         Assertions.assertTrue(code.replaceAll("\\s+", " ").contains(manyToOneAnnotation));
     }
@@ -146,7 +146,7 @@ public class JsonTransformerClassGeneratorTest {
                     mappedBy = "User"
                 )
                 private List<%s> posts;
-                """, PACKAGE_NAME + ".Post");
+                """, "Post");
         oneToManyAnnotation = oneToManyAnnotation.replaceAll("\\s+", " ").trim();
         Assertions.assertTrue(code.replaceAll("\\s+", " ").contains(oneToManyAnnotation));
     }
@@ -159,8 +159,8 @@ public class JsonTransformerClassGeneratorTest {
                     joinColumns = @JoinColumn(name = "user_id"),
                     inverseJoinColumns = @JoinColumn(name = "post_id")
                 )
-                private List<%s> posts;
-                """, PACKAGE_NAME + ".Post");
+                private List<Post> posts;
+                """, "Post");
         oneToManyAnnotation = oneToManyAnnotation.replaceAll("\\s+", " ").trim();
         Assertions.assertTrue(code.replaceAll("\\s+", " ").contains(oneToManyAnnotation));
     }
@@ -234,10 +234,10 @@ public class JsonTransformerClassGeneratorTest {
             int start = type.indexOf("<") + 1;
             int end = type.indexOf(">");
             String genericType = type.substring(start, end);
-            String qualifiedGeneric = prop.getPkg() + "." + genericType;
+            String qualifiedGeneric = genericType;
             return type.substring(0, start) + qualifiedGeneric + type.substring(end);
         } else {
-            return prop.getPkg() + "." + type;
+            return type;
         }
     }
 

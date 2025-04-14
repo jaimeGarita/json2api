@@ -14,7 +14,6 @@ public class JavaFileAdder {
         Path newFolderPath = projectDir.resolve(folderName);
         Files.createDirectories(newFolderPath);
 
-        // Crear un archivo Java nuevo dentro de esa carpeta
         Path newFilePath = newFolderPath.resolve(className + ".java");
         Files.write(newFilePath, code.getBytes());
     }
