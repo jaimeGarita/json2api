@@ -1,6 +1,7 @@
 package com.jaimeg.json2api.service;
 
-import com.jaimeg.json2api.generator.ModelClassGenerator;
+import com.jaimeg.json2api.context.GeneratorContext;
+import com.jaimeg.json2api.enums.ComponentType;
 import com.jaimeg.json2api.models.EntityStructure;
 import com.jaimeg.json2api.models.JsonTransformer;
 import com.jaimeg.json2api.util.JavaFileAdder;
@@ -8,22 +9,19 @@ import com.jaimeg.json2api.util.ZipUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Service
 public class CodeGeneratorService {
 
-    private final ModelClassGenerator modelClassGenerator;
+    private final GeneratorContext generatorContext;
     private final ZipUtils zipUtils;
     private final JavaFileAdder javaFileAdder;
 
-    public CodeGeneratorService(ModelClassGenerator modelClassGenerator, ZipUtils zipUtils, JavaFileAdder javaFileAdder) {
-        this.modelClassGenerator = modelClassGenerator;
+    public CodeGeneratorService(GeneratorContext generatorContext, ZipUtils zipUtils, JavaFileAdder javaFileAdder) {
+        this.generatorContext = generatorContext;
         this.zipUtils = zipUtils;
         this.javaFileAdder = javaFileAdder;
     }
@@ -44,7 +42,7 @@ public class CodeGeneratorService {
 
             Path srcPath = tempDir.resolve(jsonTransformer.getArtifact()).resolve("src/main/java").resolve(baseFolder);
             for (EntityStructure model : jsonTransformer.getModels()) {
-                String code = modelClassGenerator.generateModelClassCode(model, jsonTransformer.getGroup(), jsonTransformer.getArtifact());
+                String code = generatorContext.generateCode(ComponentType.TABLE, model, jsonTransformer.getGroup(), jsonTransformer.getArtifact());
                 javaFileAdder.addNewJavaFile(srcPath, code, model.getName(), "");
             }
 

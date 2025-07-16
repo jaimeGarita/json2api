@@ -1,10 +1,12 @@
 package com.jaimeg.json2api.generator;
 
+import com.jaimeg.json2api.context.GeneratorContext;
+import com.jaimeg.json2api.enums.ComponentType;
 import com.jaimeg.json2api.models.EntityStructure;
 import com.jaimeg.json2api.models.Property;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.ArrayList;
@@ -16,20 +18,14 @@ public class JsonTransformerClassGeneratorTest {
 
     private final static String GROUP = "com.example";
     private final static String ARTIFACT = "prueba";
-    private final static String PACKAGE_NAME = GROUP + "." + ARTIFACT + ".model";
 
-
-    private ModelClassGenerator modelClassGenerator;
-
-    @BeforeEach
-    public void setUp() {
-        modelClassGenerator = new ModelClassGenerator();
-    }
+    @Autowired
+    private GeneratorContext generatorContext;
 
     @Test
     void test_generateModelClassCode() {
         EntityStructure model = createSampleModel();
-        String code = modelClassGenerator.generateModelClassCode(model, GROUP, ARTIFACT);
+        String code = generatorContext.generateCode(ComponentType.TABLE, model, GROUP, ARTIFACT);
 
         assertClassStructure(code);
         assertEntityAnnotations(code);
@@ -42,7 +38,7 @@ public class JsonTransformerClassGeneratorTest {
     @Test
     void test_generateModelWithPkg() {
         EntityStructure model = createModelWithPkg();
-        String code = modelClassGenerator.generateModelClassCode(model, GROUP, ARTIFACT);
+        String code = generatorContext.generateCode(ComponentType.TABLE, model, GROUP, ARTIFACT);
 
         assertClassStructure(code);
         assertEntityAnnotations(code);
@@ -56,7 +52,7 @@ public class JsonTransformerClassGeneratorTest {
     @Test
     void test_generateModelWithManyToOne() {
         EntityStructure entityStructure = createModelsWithRelationShips("ManyToOne", null);
-        String code = modelClassGenerator.generateModelClassCode(entityStructure, GROUP, ARTIFACT);
+        String code = generatorContext.generateCode(ComponentType.TABLE, entityStructure, GROUP, ARTIFACT);
         assertClassStructure(code);
         assertEntityAnnotations(code);
         assertFieldAnnotations(code, "id", "Integer", true);
@@ -72,7 +68,7 @@ public class JsonTransformerClassGeneratorTest {
     void test_generateModelWithOneToMany() {
 
         EntityStructure entityStructure = createModelsWithRelationShips("OneToMany", null);
-        String code = modelClassGenerator.generateModelClassCode(entityStructure, GROUP, ARTIFACT);
+        String code = generatorContext.generateCode(ComponentType.TABLE, entityStructure, GROUP, ARTIFACT);
         assertClassStructure(code);
         assertEntityAnnotations(code);
         assertFieldAnnotations(code, "id", "Integer", true);
@@ -87,7 +83,7 @@ public class JsonTransformerClassGeneratorTest {
     @Test
     void test_generateModelWithManyToMany() {
         EntityStructure entityStructure = createModelsWithRelationShips("ManyToMany", "post_id");
-        String code = modelClassGenerator.generateModelClassCode(entityStructure, GROUP, ARTIFACT);
+        String code = generatorContext.generateCode(ComponentType.TABLE, entityStructure, GROUP, ARTIFACT);
         assertClassStructure(code);
         assertEntityAnnotations(code);
         assertFieldAnnotations(code, "id", "Integer", true);
