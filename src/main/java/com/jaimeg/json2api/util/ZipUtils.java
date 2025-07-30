@@ -16,11 +16,15 @@ public class ZipUtils {
         try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipPath))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                Path entryPath = outputDir.resolve(entry.getName());
+                Path normalizedPath = outputDir.resolve(entry.getName()).normalize();
+                if (!normalizedPath.startsWith(outputDir)) {
+                    throw new IOException("Entrada ZIP inválida: " + entry.getName());
+                }
                 if (entry.isDirectory()) {
-                    Files.createDirectories(entryPath);
+                    Files.createDirectories(normalizedPath);
                 } else {
-                    try (OutputStream os = Files.newOutputStream(entryPath)) {
+                    Files.createDirectories(normalizedPath.getParent());
+                    try (OutputStream os = Files.newOutputStream(normalizedPath)) {
                         byte[] buffer = new byte[1024];
                         int length;
                         while ((length = zis.read(buffer)) > 0) {
@@ -55,11 +59,18 @@ public class ZipUtils {
                 if (file.isDirectory()) {
                     deleteDirectory(file);
                 } else {
-                    file.delete();
+                    boolean deleted = file.delete();
+                    if (!deleted) {
+                        System.err.println("Failed to delete file: " + file.getAbsolutePath());
+                    }
                 }
             }
         }
-        directory.delete();
+
+        boolean dirDeleted = directory.delete();
+        if (!dirDeleted) {
+            System.err.println("Failed to delete directory: " + directory.getAbsolutePath());
+        }
     }
 
 }
