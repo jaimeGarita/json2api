@@ -71,9 +71,19 @@ public class ModelClassGenerator implements ComponentStrategy {
         return TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(Entity.class)
-                .addJavadoc("This is the model for" + className + "entity. \n")
-                .addAnnotation(AnnotationSpec.builder(Table.class).addMember("name", "$S", className).build());
-
+                .addJavadoc(
+                        """
+                                Represents the {@link javax.persistence.Entity} model for {@code $L}.
+                                <p>
+                                This class is mapped to a database table named <strong>{@code $L}</strong> via the {@link javax.persistence.Table} annotation.
+                                It is intended to be used with JPA/Hibernate for ORM (Object-Relational Mapping) operations.
+                                <p>
+                                Fields and additional annotations should be added dynamically based on the JSON schema or other metadata.
+                                """,
+                        className, className)
+                .addAnnotation(AnnotationSpec.builder(Table.class)
+                        .addMember("name", "$S", className)
+                        .build());
     }
 
     private void constructClass(List<Property> fields, TypeSpec.Builder classBuilder, MethodSpec.Builder consterBuilder,

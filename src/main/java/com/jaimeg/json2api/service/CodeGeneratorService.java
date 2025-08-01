@@ -39,16 +39,23 @@ public class CodeGeneratorService {
 
             zipUtils.unZip(zipPath, tempDir);
 
-
             Path srcPath = tempDir.resolve(jsonTransformer.getArtifact()).resolve("src/main/java").resolve(baseFolder);
             for (EntityStructure model : jsonTransformer.getModels()) {
-                String code = generatorContext.generateCode(ComponentType.TABLE, model, jsonTransformer.getGroup(), jsonTransformer.getArtifact());
-                javaFileAdder.addNewJavaFile(srcPath, code, model.getName(), "");
+                String modelCode = generatorContext.generateCode(ComponentType.TABLE, model, jsonTransformer.getGroup(),
+                        jsonTransformer.getArtifact());
+                javaFileAdder.addNewJavaFile(srcPath, modelCode, model.getName(), "");
+
+                for (ComponentType type : jsonTransformer.getGenerationOptions().getEnabledComponentType()) {
+                    String code = generatorContext.generateCode(type, model, jsonTransformer.getGroup(),
+                            jsonTransformer.getArtifact());
+
+                    String suffix = type.name().charAt(0) + type.name().substring(1).toLowerCase();
+                    javaFileAdder.addNewJavaFile(srcPath, code, model.getName() + suffix, "");
+                }
             }
 
             File finalZip = Files.createTempFile("final-project-", ".zip").toFile();
             zipUtils.zip(tempDir.resolve(jsonTransformer.getArtifact()), finalZip);
-
 
             byte[] resultBytes = Files.readAllBytes(finalZip.toPath());
 
@@ -56,9 +63,9 @@ public class CodeGeneratorService {
 
             return resultBytes;
 
-            //TODO, HACER PETICION PARA RECOGER SPRING INITZLR,
-            //TODO VER DEPENDENCIAS QUE NECESITO OBLIGATORIAMENTE EN EL POM
-            //TODO AÑADIR DEMOMENTO LOS FICHEROS .JAVA A ESE ZIP
+            // TODO, HACER PETICION PARA RECOGER SPRING INITZLR,
+            // TODO VER DEPENDENCIAS QUE NECESITO OBLIGATORIAMENTE EN EL POM
+            // TODO AÑADIR DEMOMENTO LOS FICHEROS .JAVA A ESE ZIP
         } catch (Exception e) {
             e.printStackTrace();
             return null;

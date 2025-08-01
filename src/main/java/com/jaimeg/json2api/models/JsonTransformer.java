@@ -30,4 +30,7 @@ public class JsonTransformer {
 
     @JsonAlias("models")
     private List<EntityStructure> models;
+
+    @JsonAlias("components")
+    private GenerationOptions generationOptions;
 }

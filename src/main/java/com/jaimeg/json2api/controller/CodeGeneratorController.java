@@ -26,6 +26,7 @@ public class CodeGeneratorController {
         this.springInitializrUtil = springInitializrUtil;
     }
 
+    
     @PostMapping("")
     public ResponseEntity<byte[]> generateCode(@RequestBody JsonTransformer models) {
         try {
@@ -36,7 +37,7 @@ public class CodeGeneratorController {
                     models.getDependencies(),
                     models.getDescription(),
                     models.getJavaVersion(),
-                    models.getPackaging()
+                    models.getPackaging().toLowerCase()
             );
             byte[] finalZip = this.codeGeneratorService.generateCodeService(models, zipBytes);
             return ResponseEntity.ok()
