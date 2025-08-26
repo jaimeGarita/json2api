@@ -3,7 +3,7 @@
   "artifact": "demo",
   "description": "Demo project for Spring Boot",
   "java_version": "21",
-  "packaging": "Jar",
+  "packaging": "jar",
   "models": [
     {
       "name": "User",

@@ -29,28 +29,47 @@ public class CodeGeneratorService {
     public byte[] generateCodeService(JsonTransformer jsonTransformer, byte[] zipBytes) {
 
         try {
-
             String basePackage = jsonTransformer.getGroup() + "." + jsonTransformer.getArtifact();
             String baseFolder = basePackage.replace(".", "/");
-            baseFolder = baseFolder + "/model";
+
             Path tempDir = Files.createTempDirectory("spring-project-" + UUID.randomUUID());
             Path zipPath = tempDir.resolve("project.zip");
             Files.write(zipPath, zipBytes);
 
             zipUtils.unZip(zipPath, tempDir);
+            Path srcPath = tempDir.resolve(jsonTransformer.getArtifact())
+                    .resolve("src/main/java")
+                    .resolve(baseFolder);
 
-            Path srcPath = tempDir.resolve(jsonTransformer.getArtifact()).resolve("src/main/java").resolve(baseFolder);
             for (EntityStructure model : jsonTransformer.getModels()) {
-                String modelCode = generatorContext.generateCode(ComponentType.TABLE, model, jsonTransformer.getGroup(),
+                String modelCode = generatorContext.generateCode(
+                        ComponentType.TABLE, model,
+                        jsonTransformer.getGroup(),
                         jsonTransformer.getArtifact());
-                javaFileAdder.addNewJavaFile(srcPath, modelCode, model.getName(), "");
+                Path modelPath = srcPath.resolve("model");
+                javaFileAdder.addNewJavaFile(modelPath, modelCode, model.getName(), "");
 
                 for (ComponentType type : jsonTransformer.getGenerationOptions().getEnabledComponentType()) {
-                    String code = generatorContext.generateCode(type, model, jsonTransformer.getGroup(),
+
+                    if (type == ComponentType.TABLE)
+                        continue;
+
+                    String code = generatorContext.generateCode(
+                            type, model,
+                            jsonTransformer.getGroup(),
                             jsonTransformer.getArtifact());
 
                     String suffix = type.name().charAt(0) + type.name().substring(1).toLowerCase();
-                    javaFileAdder.addNewJavaFile(srcPath, code, model.getName() + suffix, "");
+
+                    String packageFolder = switch (type) {
+                        case CONTROLLER -> "controller";
+                        case SERVICE -> "service";
+                        case REPOSITORY -> "repository";
+                        default -> "model";
+                    };
+
+                    Path componentPath = srcPath.resolve(packageFolder);
+                    javaFileAdder.addNewJavaFile(componentPath, code, model.getName() + suffix, "");
                 }
             }
 
@@ -63,9 +82,6 @@ public class CodeGeneratorService {
 
             return resultBytes;
 
-            // TODO, HACER PETICION PARA RECOGER SPRING INITZLR,
-            // TODO VER DEPENDENCIAS QUE NECESITO OBLIGATORIAMENTE EN EL POM
-            // TODO AÑADIR DEMOMENTO LOS FICHEROS .JAVA A ESE ZIP
         } catch (Exception e) {
             e.printStackTrace();
             return null;

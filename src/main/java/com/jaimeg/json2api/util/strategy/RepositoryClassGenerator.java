@@ -9,12 +9,8 @@ import javax.lang.model.element.Modifier;
 
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.jaimeg.json2api.models.EntityStructure;
 import com.jaimeg.json2api.models.Property;
-import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.ParameterizedTypeName;
@@ -41,7 +37,22 @@ public class RepositoryClassGenerator implements ComponentStrategy {
 
         ClassName jpaRepository = ClassName.get("org.springframework.data.jpa.repository", "JpaRepository");
         ClassName entityClass = ClassName.get(entityPackage, entityName);
-        ClassName idClass = ClassName.get(idPkg.orElse("java.util"), idTypeOptional.get());
+        ClassName idClass = idTypeOptional.map(type -> {
+            switch (type) {
+                case "Long":
+                case "Integer":
+                case "String":
+                case "Double":
+                case "Float":
+                case "Boolean":
+                    return ClassName.get("java.lang", type);
+                default:
+                    if (idPkg.isPresent()) {
+                        return ClassName.get(idPkg.get(), type);
+                    }
+                    return ClassName.get("java.lang", type);
+            }
+        }).orElseThrow(() -> new IllegalArgumentException("No primary key defined for entity " + entityName));
 
         ParameterizedTypeName superInterface = ParameterizedTypeName.get(jpaRepository, entityClass, idClass);
 
@@ -50,11 +61,9 @@ public class RepositoryClassGenerator implements ComponentStrategy {
                 .addAnnotation(Repository.class)
                 .addSuperinterface(superInterface)
                 .addJavadoc("""
-                        /**
-                         * Spring Data JPA repository for the {@code $L} entity.
-                         * <p>
-                         * Provides CRUD operations via {@link JpaRepository}.
-                         */
+                        Spring Data JPA repository for the {@code $L} entity.
+                        <p>
+                        Provides CRUD operations via {@link JpaRepository}.
                         """, entityName);
 
         JavaFile javaFile = JavaFile.builder(packageName, repositoryInterface.build()).build();
